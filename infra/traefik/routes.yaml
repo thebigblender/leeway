@@ -1,0 +1,17 @@
+http:
+  routers:
+    demo:
+      rule: "PathPrefix(`/`)"
+      entryPoints:
+        - web
+      service: stable
+
+  services:
+    stable:
+      loadBalancer:
+        servers:
+          - url: http://stable:8000
+    candidate:
+      loadBalancer:
+        servers:
+          - url: http://candidate:8000

@@ -1,0 +1,23 @@
+services:
+  traefik:
+    image: traefik:v3.7.20
+    command:
+      - "--entrypoints.web.address=:80"
+      - "--providers.file.directory=/etc/traefik/routes"
+      - "--providers.file.watch=true"
+    ports:
+      - "127.0.0.1:8080:80"
+    volumes:
+      - ./infra/traefik:/etc/traefik/routes:ro
+
+  stable:
+    image: leeway-demo:latest
+    pull_policy: never
+    environment:
+      APP_VERSION: v1
+
+  candidate:
+    image: leeway-demo:latest
+    pull_policy: never
+    environment:
+      APP_VERSION: v2

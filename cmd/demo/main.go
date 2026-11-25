@@ -11,7 +11,6 @@ import (
 func main() {
 	version := os.Getenv("APP_VERSION")
 	demo_fail := os.Getenv("DEMO_FAIL") == "1"
-	demo_delay := os.Getenv("DEMO_DELAY")
 
 	var delay time.Duration
 	if rawDelay := os.Getenv("DEMO_DELAY"); rawDelay != "" {
@@ -45,5 +44,9 @@ func main() {
 		fmt.Fprintln(w, "slow work complete")
 	})
 
-	log.Fatal(http.ListenAndServe("127.0.0.1:8000", mux))
+	addr := os.Getenv("APP_ADDR")
+	if addr == "" {
+		addr = "127.0.0.1:8000"
+	}
+	log.Fatal(http.ListenAndServe(addr, mux))
 }
