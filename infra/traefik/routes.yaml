@@ -4,9 +4,16 @@ http:
       rule: "PathPrefix(`/`)"
       entryPoints:
         - web
-      service: stable
+      service: rollout
 
   services:
+    rollout:
+      weighted:
+        services:
+          - name: stable
+            weight: 0
+          - name: candidate
+            weight: 100
     stable:
       loadBalancer:
         servers:

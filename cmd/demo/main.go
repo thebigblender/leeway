@@ -3,9 +3,12 @@ package main
 import (
 	"fmt"
 	"log"
-	"time"
 	"net/http"
 	"os"
+	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
@@ -22,6 +25,21 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
+
+	workRequests := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "demo_work_requests_total",
+		Help: "Number of /work responses by version and HTTP status.",
+	}, []string{"version", "status"})
+	prometheus.MustRegister(workRequests)
+
+	workDuration := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name: "demo_work_duration_seconds",
+		Help: "Time spent handling /work requests.",
+	}, []string{"version"})
+	prometheus.MustRegister(workDuration)
+	
+	mux.Handle("/metrics", promhttp.Handler())
+	
 	mux.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, version)
 	})
@@ -31,12 +49,18 @@ func main() {
 	})
 
 	mux.HandleFunc("/work", func(w http.ResponseWriter, r *http.Request){
+		started := time.Now()
+		defer func() {
+			workDuration.WithLabelValues(version).Observe(time.Since(started).Seconds())
+		}()
 		time.Sleep(delay)
 		if demo_fail {
 			http.Error(w, "demo failure", http.StatusInternalServerError)
+			workRequests.WithLabelValues(version, "500").Inc()
 			return
 		}
 		fmt.Fprintln(w, "work complete")
+		workRequests.WithLabelValues(version, "200").Inc()
 	})
 
 	mux.HandleFunc("/slow", func(w http.ResponseWriter, r *http.Request){
